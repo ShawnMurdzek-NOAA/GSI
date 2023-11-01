@@ -1460,7 +1460,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            else if(tob) then
 !             aircraft temperature data
 !             aircraftobst = kx>129.and.kx<140
-              aircraftobst = (kx==131) .or. (kx>=133 .and. kx<=135) .or. (kx==130) ! for currently known types
+              aircraftobst = (kx==131) .or. (kx>=133 .and. kx<=136) .or. (kx==130) ! for currently known types
 
               aircraftwk = bmiss
               if (aircraftobst) then
@@ -1667,7 +1667,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
               end if
 !          END of the AMV acceptance section (E. James)
 !          USE q from 300-10 mb for aircraft and raobs (E. James)
-              if(qob .and. (kx==120 .or. kx==131 .or. kx==133 .or. kx==134)) then
+              if(qob .and. (kx==120 .or. kx==131 .or. kx==133 .or. kx==134 .or. kx==136)) then
                  do k=1,levs
                     if(  plevs(k)<=30.0_r_kind .and. plevs(k)>=1.0_r_kind ) then
                       if(qqm(k) == 9) qqm(k)=2
