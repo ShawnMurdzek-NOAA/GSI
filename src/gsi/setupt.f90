@@ -353,6 +353,8 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   real(r_kind), parameter :: lapse_error_frac = 0.5 ! inflation factor for obs error when vertically interpolating
   real(r_kind), parameter :: max_delta_z = 300. ! max. vertical mismatch allowed
 
+  logical :: muse_old ! SSM 20231106
+
 ! CSD - move this to where the namelists are read in.
   if (i_use_2mt4b>0)  hofx_2m_sfcfile=.false.
 
@@ -467,8 +469,10 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
            if(l_closeobs) then
               if(abs(data(itime,k)-hr_offset)<abs(data(itime,l)-hr_offset)) then
                   muse(l)=.false.
+                  data(iuse,l)=54._r_kind ! SSM 20231106
               else
                   muse(k)=.false.
+                  data(iuse,k)=53._r_kind ! SSM 20231106
               endif
 !              write(*,'(a,2f10.5,2I8,2L10)') 'chech obs time==',data(itime,k)-hr_offset,data(itime,l)-hr_offset,k,l,&
 !                           muse(k),muse(l)
@@ -730,7 +734,10 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
 
 !         mask: 0 - sea, 1 - land, 2-ice, >= 3 mixed
 !         for now, use only pure land
-          if (int(data(idomsfc,i)) .NE. 1  ) muse(i) = .false.
+          if (int(data(idomsfc,i)) .NE. 1  ) then
+            muse(i) = .false.
+            data(iuse,i) = 52._r_kind ! SSM 20231106
+          endif
 
           call tintrp2a11(ges_t2m,tges2m,dlat,dlon,dtime,hrdifsig,&
             mype,nfldsig)
@@ -884,6 +891,7 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
                 lapse_error = abs(lapse_error_frac*T_lapse*delta_z)
         else
                 muse(i)=.false.
+                data(iuse,i)=51._r_kind ! SSM 20231106
         endif
      endif
 
@@ -1018,9 +1026,14 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
         end if
      endif
      
-     if (ratio_errors*error <=tiny_r_kind) muse(i)=.false.
+     if (ratio_errors*error <=tiny_r_kind) then
+       muse(i)=.false.
+       data(iuse,i)=50._r_kind ! SSM 20231106
+     endif
 
+     muse_old = muse(i)
      if (nobskeep>0 .and. luse_obsdiag) call obsdiagNode_get(my_diag, jiter=nobskeep, muse=muse(i))
+     if (muse_old .and. (.not. muse(i))) data(iuse,i)=49._r_kind ! SSM 20231106
 
 !    Oberror Tuning and Perturb Obs
      if(muse(i)) then
