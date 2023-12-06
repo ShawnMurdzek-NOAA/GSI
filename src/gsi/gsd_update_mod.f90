@@ -516,8 +516,8 @@ subroutine gsd_update_t2m(tinc,it)
 !$$$
   use kinds, only: r_kind,i_kind
   use jfunc, only:  tsensible
-  use constants, only: zero,one,fv,one_tenth
-  use gridmod, only: lat2,lon2
+  use constants, only: zero,one,fv,one_tenth,rd_over_cp_mass
+  use gridmod, only: lat2,lon2,aeta1_ll,pt_ll,aeta2_ll
   use constants, only: half
 
   implicit none
@@ -530,6 +530,7 @@ subroutine gsd_update_t2m(tinc,it)
   real(r_kind),parameter:: r100=100.0_r_kind
   integer(i_kind) i,j,ier,ihaveq
   real(r_kind) :: dth2
+  real(r_kind) :: work_prsl,work_prslk   ! SSM 20231205
 
   real(r_kind),dimension(:,:  ),pointer:: ges_ps =>NULL()
   real(r_kind),dimension(:,:  ),pointer:: ges_t2m=>NULL()
@@ -539,7 +540,9 @@ subroutine gsd_update_t2m(tinc,it)
 !
 ! 2-m temperature
 !  do it=1,nfldsig
-     call gsi_bundlegetpointer(gsi_metguess_bundle(it),'t2m',ges_t2m,ier)
+! SSM 20231205: Only have 2-m theta from WRF
+!     call gsi_bundlegetpointer(gsi_metguess_bundle(it),'t2m',ges_t2m,ier)
+     call gsi_bundlegetpointer(gsi_metguess_bundle(it),'th2m',ges_t2m,ier)
      if(ier/=0) return
      call gsi_bundlegetpointer(gsi_metguess_bundle(it),'ps',ges_ps,ier)
      if(ier/=0) return
@@ -554,8 +557,13 @@ subroutine gsd_update_t2m(tinc,it)
               if(ihaveq/=0) cycle
               dth2=tinc(i,j)/(one+fv*ges_q(i,j,1))
            endif
+! SSM 20231205: Convert sensible temperature to potential temperature
+           work_prsl  = one_tenth*(aeta1_ll(1)*(r10*ges_ps(i,j)-pt_ll)+ &
+                                   aeta2_ll(1) + pt_ll)
+           work_prslk = (work_prsl/r100)**rd_over_cp_mass
+           ges_t2m(i,j) = ges_t2m(i,j) + dth2/work_prslk
 
-           ges_t2m(i,j) = ges_t2m(i,j) + dth2
+!           ges_t2m(i,j) = ges_t2m(i,j) + dth2
         end do
      end do
 !  end do

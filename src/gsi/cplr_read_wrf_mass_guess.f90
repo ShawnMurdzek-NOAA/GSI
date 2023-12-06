@@ -293,8 +293,12 @@ contains
           if (ier/=0) call die(trim(myname),'cannot get pointers for met-fields, ier =',ier)
   
           if (l_gsd_soilTQ_nudge .or.i_use_2mt4b>0) then
-             call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 't2m', ges_t2m_it,istatus );ier=ier+istatus 
-             if (ier/=0) call die(trim(myname),'cannot get pointers for t2m, ier=',ier)
+             !call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 't2m', ges_t2m_it,istatus );ier=ier+istatus 
+             !if (ier/=0) call die(trim(myname),'cannot get pointers for t2m, ier=',ier)
+             ! SSM 20231205: Retrieve theta now, convert to sensible T later
+             ! Maybe only applicable for WRF?
+             call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'th2m', ges_t2m_it,istatus );ier=ier+istatus 
+             if (ier/=0) call die(trim(myname),'cannot get pointers for th2m, ier=',ier)
           endif
 
           if (l_gsd_soilTQ_nudge) then
@@ -1941,8 +1945,12 @@ contains
              if (ier/=0) call die(trim(myname),'cannot get pointers for q2m, ier =',ier)
           endif
           if (i_use_2mt4b > 0) then
-             call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 't2m',ges_t2m_it, istatus );ier=ier+istatus
-             if (ier/=0) call die(trim(myname),'cannot get pointers for t2m,ier =',ier)
+             !call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 't2m',ges_t2m_it, istatus );ier=ier+istatus
+             !if (ier/=0) call die(trim(myname),'cannot get pointers for t2m,ier =',ier)
+             ! SSM 20231205: Retrieve theta now, convert to sensible T later>
+             ! Maybe only applicable for WRF?
+             call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'th2m', ges_t2m_it,istatus );ier=ier+istatus 
+             if (ier/=0) call die(trim(myname),'cannot get pointers for th2m, ier=',ier)
           endif
           if (l_gsd_soilTQ_nudge) then
              call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'tskn',ges_tsk_it, istatus );ier=ier+istatus 

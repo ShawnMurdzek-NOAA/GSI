@@ -2228,7 +2228,9 @@
      if (fv3_regional) then
         call convert_fv3_regional
      else
-        if(i_gsdcldanal_type.ne.6) call regional_io%convert_regional_guess(mype,ctph0,stph0,tlm0)
+        if(i_gsdcldanal_type.ne.6) then
+          call regional_io%convert_regional_guess(mype,ctph0,stph0,tlm0)
+        endif
      endif
   endif
             

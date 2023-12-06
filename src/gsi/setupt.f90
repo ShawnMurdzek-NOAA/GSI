@@ -338,7 +338,9 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
   real(r_kind),allocatable,dimension(:,:,:,:) :: ges_tv
   real(r_kind),allocatable,dimension(:,:,:,:) :: ges_q
   real(r_kind),allocatable,dimension(:,:,:  ) :: ges_q2
-  real(r_kind),allocatable,dimension(:,:,:  ) :: ges_t2m
+! SSM 20231205: sigf only has 2-m theta when using WRF
+!  real(r_kind),allocatable,dimension(:,:,:  ) :: ges_t2m
+  real(r_kind),allocatable,dimension(:,:,:  ) :: ges_th2m
 
   logical:: l_pbl_pseudo_itype
   integer(i_kind):: ich0
@@ -739,8 +741,11 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
             data(iuse,i) = 52._r_kind ! SSM 20231106
           endif
 
-          call tintrp2a11(ges_t2m,tges2m,dlat,dlon,dtime,hrdifsig,&
+! SSM 20231205: sigf only has 2-m theta when using WRF
+!          call tintrp2a11(ges_t2m,tges2m,dlat,dlon,dtime,hrdifsig,&
+          call tintrp2a11(ges_th2m,tges2m,dlat,dlon,dtime,hrdifsig,&
             mype,nfldsig)
+          tges2m=tges2m*(r10*psges/r1000)**rd_over_cp_mass  ! SSM 20231205: convert to sensible T
 
 !         correct obs to model terrain height using a standard lapse rate.
 !         Later: look into updating with lapse-rate from the model (similar to gsd_terrain_match)
@@ -823,8 +828,12 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
            if(i_coastline==1 .or. i_coastline==3) then
 
 !          Interpolate guess th 2m to observation location and time
-              call tintrp2a11_csln(ges_t2m,tges2m,tges2m_water,dlat,dlon,dtime,hrdifsig,&
+! SSM 20231205: sigf only has 2-m theta when using WRF
+!              call tintrp2a11_csln(ges_t2m,tges2m,tges2m_water,dlat,dlon,dtime,hrdifsig,&
+              call tintrp2a11_csln(ges_th2m,tges2m,tges2m_water,dlat,dlon,dtime,hrdifsig,&
                 mype,nfldsig)
+              tges2m=tges2m*(r10*psges/r1000)**rd_over_cp_mass  ! SSM 20231205: convert to sensible T
+              tges2m_water=tges2m_water*(r10*psges/r1000)**rd_over_cp_mass  ! SSM 20231205: convert to sensible T
               if(iqtflg)then
                  call tintrp2a11_csln(ges_q2,qges2m,qges2m_water,dlat,dlon,dtime,hrdifsig,&
                      mype,nfldsig)
@@ -834,8 +843,11 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
               if( abs(tob-tges2m) > abs(tob-tges2m_water)) tges2m=tges2m_water
            else
 !          Interpolate guess th 2m to observation location and time
-              call tintrp2a11(ges_t2m,tges2m,dlat,dlon,dtime,hrdifsig,&
+! SSM 20231205: sigf only has 2-m theta when using WRF
+!              call tintrp2a11(ges_t2m,tges2m,dlat,dlon,dtime,hrdifsig,&
+              call tintrp2a11(ges_th2m,tges2m,dlat,dlon,dtime,hrdifsig,&
                 mype,nfldsig)
+              tges2m=tges2m*(r10*psges/r1000)**rd_over_cp_mass  ! SSM 20231205: convert to sensible T
               if(iqtflg)then
                  call tintrp2a11(ges_q2,qges2m,dlat,dlon,dtime,hrdifsig,&
                      mype,nfldsig)
@@ -1517,19 +1529,38 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
          call stop2(999)
      endif
      if(i_use_2mt4b>0 .or. hofx_2m_sfcfile) then
+! SSM 20231205: sigf only has 2-m theta when using WRF
 !    get t2m ...
-        varname='t2m'
+!        varname='t2m'
+!        call gsi_bundlegetpointer(gsi_metguess_bundle(1),trim(varname),rank2,istatus)
+!        if (istatus==0) then
+!            if(allocated(ges_t2m))then
+!               write(6,*) trim(myname), ': ', trim(varname), ' already incorrectly alloc '
+!               call stop2(999)
+!            endif
+!            allocate(ges_t2m(size(rank2,1),size(rank2,2),nfldsig))
+!            ges_t2m(:,:,1)=rank2
+!            do ifld=2,nfldsig
+!               call gsi_bundlegetpointer(gsi_metguess_bundle(ifld),trim(varname),rank2,istatus)
+!               ges_t2m(:,:,ifld)=rank2
+!            enddo
+!        else
+!            write(6,*) trim(myname),': ', trim(varname), ' not found in met bundle, ier= ',istatus
+!            call stop2(999)
+!        endif
+!    get th2m ...
+        varname='th2m'
         call gsi_bundlegetpointer(gsi_metguess_bundle(1),trim(varname),rank2,istatus)
         if (istatus==0) then
-            if(allocated(ges_t2m))then
+            if(allocated(ges_th2m))then
                write(6,*) trim(myname), ': ', trim(varname), ' already incorrectly alloc '
                call stop2(999)
             endif
-            allocate(ges_t2m(size(rank2,1),size(rank2,2),nfldsig))
-            ges_t2m(:,:,1)=rank2
+            allocate(ges_th2m(size(rank2,1),size(rank2,2),nfldsig))
+            ges_th2m(:,:,1)=rank2
             do ifld=2,nfldsig
                call gsi_bundlegetpointer(gsi_metguess_bundle(ifld),trim(varname),rank2,istatus)
-               ges_t2m(:,:,ifld)=rank2
+               ges_th2m(:,:,ifld)=rank2
             enddo
         else
             write(6,*) trim(myname),': ', trim(varname), ' not found in met bundle, ier= ',istatus
@@ -1936,7 +1967,9 @@ subroutine setupt(obsLL,odiagLL,lunin,mype,bwork,awork,nele,nobs,is,conv_diagsav
     if(allocated(ges_u )) deallocate(ges_u )
     if(allocated(ges_ps)) deallocate(ges_ps)
     if(allocated(ges_q2)) deallocate(ges_q2)
-    if(allocated(ges_t2m)) deallocate(ges_t2m)
+    !if(allocated(ges_t2m)) deallocate(ges_t2m)
+    ! SSM 20231205: sigf only has 2-m theta when using WRF
+    if(allocated(ges_th2m)) deallocate(ges_th2m)
   end subroutine final_vars_
 
 end subroutine setupt
